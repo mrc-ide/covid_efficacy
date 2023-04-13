@@ -19,7 +19,8 @@ source("R/vx_profile.R")
 ##### LOAD THE PARAMETERS 
 ##################################
 
-load("../Model Fitting/Main/UKHSA_v6_65+_20220702_AZPD2=FALSE_SB=FALSE_NewDecay=TRUE_AddBst=FALSE_AltSev=FALSE_mcmc_chain.Rdata")  
+load("../Model Fitting/Main/UKHSA_v6pn_65+_20220702_AZPD2=FALSE_SB=FALSE_NewDecay=TRUE_AddBst=FALSE_AltSev=FALSE_mcmc_chain.Rdata")  
+#load("../Model Fitting/Main/UKHSA_v6pn_20220702_AZPD2=FALSE_SB=FALSE_NewDecay=TRUE_AddBst=FALSE_AltSev=FALSE_mcmc_chain.Rdata") 
 
 
 chain <- mcmc$output %>%
@@ -32,9 +33,9 @@ draws <- sample_chains(mcmc, 10000)
 
 draws_transform <- draws %>%
   select(-sample, -AZ_ns_off ) %>%
-  mutate( ab50 = 10^(d2_PF + ni50),
-          ab50_s = 10^(d2_PF + ns50), 
-          ab50_d = 10^(d2_PF + nd50),
+  mutate( ab50 = 10^ni50, 
+          ab50_s = 10^ns50, 
+          ab50_d = 10^nd50, 
           d1_AZ = 10^(d2_AZ + d1_AZ),
           d1_PF = 10^(d2_PF + d1_PF),
           d1_MD = 10^(d2_MD + d1_MD),
@@ -102,9 +103,9 @@ df_AZ_AZ <- df_raw %>%
          d1 = d1_AZ,
          d2 = d2_AZ,
          d3 = bst_AZ,
-         ab50 = d2_PF + ni50,
-         ab50_s = d2_PF + ns50, 
-         ab50_d = d2_PF + nd50) %>% 
+         ab50 =  ni50,
+         ab50_s =  ns50, 
+         ab50_d =  nd50) %>% 
   select(-c(d1_PF, d1_AZ, d1_MD, d2_PF, d2_AZ, d2_MD, bst_PF,bst_AZ, bst_MD,
             AZ_ns_off,ni50,ns50,nd50, period_l)) 
 
@@ -113,9 +114,9 @@ df_AZ_PF <- df_raw %>%
          d1 = d1_AZ,
          d2 = d2_AZ,
          d3 = bst_PF,
-         ab50 = d2_PF + ni50,
-         ab50_s = d2_PF + ns50, 
-         ab50_d = d2_PF + nd50) %>% 
+         ab50 =  ni50,
+         ab50_s =  ns50, 
+         ab50_d =  nd50) %>% 
   select(-c(d1_PF, d1_AZ, d1_MD, d2_PF, d2_AZ, d2_MD, bst_PF,bst_AZ, bst_MD,
             AZ_ns_off,ni50,ns50,nd50, period_l)) 
 
@@ -124,9 +125,9 @@ df_AZ_MD <- df_raw %>%
          d1 = d1_AZ,
          d2 = d2_AZ,
          d3 = bst_MD,
-         ab50 = d2_PF + ni50,
-         ab50_s = d2_PF + ns50, 
-         ab50_d = d2_PF + nd50) %>% 
+         ab50 = ni50,
+         ab50_s =  ns50, 
+         ab50_d = nd50) %>% 
   select(-c(d1_PF, d1_AZ, d1_MD, d2_PF, d2_AZ, d2_MD, bst_PF,bst_AZ, bst_MD,
             AZ_ns_off,ni50,ns50,nd50, period_l)) 
 
@@ -135,9 +136,9 @@ df_PF_PF <- df_raw %>%
          d1 = d1_PF,
          d2 = d2_PF,
          d3 = bst_PF,
-         ab50 = d2_PF + ni50,
-         ab50_s = d2_PF + ns50, 
-         ab50_d = d2_PF + nd50) %>% 
+         ab50 =  ni50,
+         ab50_s =  ns50, 
+         ab50_d =  nd50) %>% 
   select(-c(d1_PF, d1_AZ, d1_MD, d2_PF, d2_AZ, d2_MD, bst_PF,bst_AZ, bst_MD,
             AZ_ns_off,ni50,ns50,nd50, period_l)) 
 
@@ -146,9 +147,9 @@ df_PF_MD <- df_raw %>%
          d1 = d1_PF,
          d2 = d2_PF,
          d3 = bst_MD,
-         ab50 = d2_PF + ni50,
-         ab50_s = d2_PF + ns50, 
-         ab50_d = d2_PF + nd50) %>% 
+         ab50 =  ni50,
+         ab50_s =  ns50, 
+         ab50_d =  nd50) %>% 
   select(-c(d1_PF, d1_AZ, d1_MD, d2_PF, d2_AZ, d2_MD, bst_PF,bst_AZ, bst_MD,
             AZ_ns_off,ni50,ns50,nd50, period_l)) 
 
@@ -157,9 +158,9 @@ df_MD_PF <- df_raw %>%
          d1 = d1_MD,
          d2 = d2_MD,
          d3 = bst_PF,
-         ab50 = d2_PF + ni50,
-         ab50_s = d2_PF + ns50, 
-         ab50_d = d2_PF + nd50) %>% 
+         ab50 =  ni50,
+         ab50_s =  ns50, 
+         ab50_d =  nd50) %>% 
   select(-c(d1_PF, d1_AZ, d1_MD, d2_PF, d2_AZ, d2_MD, bst_PF,bst_AZ, bst_MD,
             AZ_ns_off,ni50,ns50,nd50, period_l)) 
 
@@ -168,9 +169,9 @@ df_MD_MD <- df_raw %>%
          d1 = d1_MD,
          d2 = d2_MD,
          d3 = bst_MD,
-         ab50 = d2_PF + ni50,
-         ab50_s = d2_PF + ns50, 
-         ab50_d = d2_PF + nd50) %>% 
+         ab50 =  ni50,
+         ab50_s =  ns50, 
+         ab50_d =  nd50) %>% 
   select(-c(d1_PF, d1_AZ, d1_MD, d2_PF, d2_AZ, d2_MD, bst_PF,bst_AZ, bst_MD,
             AZ_ns_off,ni50,ns50,nd50, period_l)) 
 
@@ -267,6 +268,11 @@ save_as_docx("Efficacy against infection" = tb.inf,
                "Efficacy against severe disease" = tb.sev,
                "Efficacy against death" = tb.death,
                path = "../Tables/Table2.docx")
+
+save_as_docx("Efficacy against infection" = tb.inf,
+             "Efficacy against severe disease" = tb.sev,
+             "Efficacy against death" = tb.death,
+             path = "../Tables/TableS2.docx")
   
 ################################################################################
 ### TABLE 3 ####################################################################
@@ -282,7 +288,6 @@ df_raw_bivalent <- df_raw %>%
   mutate(om_red = om_red*bivalent_scaling)
 
 
-
 df_MD_MD <- df_raw_bivalent %>%
   mutate(vaccine = "MD_MD",
          d1 = d1_MD,
@@ -294,8 +299,7 @@ df_MD_MD <- df_raw_bivalent %>%
   select(-c(d1_PF, d1_AZ, d1_MD, d2_PF, d2_AZ, d2_MD, bst_PF,bst_AZ, bst_MD,
             AZ_ns_off,ni50,ns50,nd50, period_l)) 
 
-#df <- bind_rows(df_AZ_AZ, df_AZ_PF, df_AZ_MD, df_PF_PF, df_PF_MD, df_MD_PF, df_MD_MD) 
-
+df <- df_MD_MD
 
 r2 <- 
   # Create input options
@@ -397,7 +401,7 @@ df_ob <- r1a %>%
   select(c(t,group,VE_original_boost))
 
 df_nob <- r1a %>%
-  filter((vaccine=="MD_MD") & (vfr==1) & (dose==2)) %>%
+  filter((vaccine=="MD_MD") & (vfr==1) & (dose==3)) %>%
   mutate(VE_no_boost = median) %>%
   mutate(t = t - 365) %>%
   filter(t>=0) %>%
@@ -422,7 +426,7 @@ combined <- combined %>%
   mutate(no_boost_to_original = VE_original_boost - VE_no_boost,
          original_to_bivalent = VE_bivalent_boost - VE_original_boost,
          no_boost_to_bivalent = VE_bivalent_boost - VE_no_boost) %>%
-  mutate(outcome = factor(outcome, levels = c("mild disease", "hospitalisation", "death")))
+  mutate(outcome = factor(outcome, levels = c("mild disease", "hospitalisation", "death"))) 
 
 #################################################################################################
 
@@ -431,7 +435,7 @@ combined <- combined %>%
 df_trajectories <- combined %>%
   select(t, outcome, VE_original_boost, VE_bivalent_boost, VE_no_boost) %>%
   pivot_longer(cols = c(VE_original_boost, VE_bivalent_boost, VE_no_boost)) %>%
-  mutate(name = factor(name, levels = c("VE_no_boost", "VE_original_boost", "VE_bivalent_boost"), labels = c("no boosting", "monovalent", "bivalent"))) 
+  mutate(name = factor(name, levels = c("VE_no_boost", "VE_original_boost", "VE_bivalent_boost"), labels = c("3 doses only", "4th dose monovalent", "4th dose bivalent"))) 
 
 p2 <- ggplot(df_trajectories, aes(x = t, y = value, col = name)) +
   geom_line() +
@@ -442,7 +446,7 @@ p2 <- ggplot(df_trajectories, aes(x = t, y = value, col = name)) +
         axis.line = element_line(),
         legend.text.align = 0) +
   scale_color_manual(values = c("#1b9e77", "#d95f02", "#7570b3")) +
-  labs(x = "time after boost (days)", y = "effectiveness (%)", col = "")
+  labs(x = "time following dose 4 (days)", y = "effectiveness (%)", col = "")
 
 p2
 
@@ -457,7 +461,7 @@ day_outcomes <- combined %>%
   group_by(t, outcome) %>%
   mutate(effect_proportion = value / sum(value)) %>%
   ungroup() %>%
-  mutate(name = factor(name, levels = c("original_to_bivalent", "no_boost_to_original"), labels = c("bivalent vs original","boosting vs not boosting")))
+  mutate(name = factor(name, levels = c("original_to_bivalent", "no_boost_to_original"), labels = c("bivalent vs original","any 4th dose vs no 4th dose")))
 
 overall <- combined %>%
   group_by(outcome) %>%
@@ -470,7 +474,7 @@ overall <- combined %>%
   mutate(t = "overall")
 
 df_out <- rbind(day_outcomes, overall) %>%
-  mutate(name = factor(name, levels = c("original_to_bivalent", "no_boost_to_original"), labels = c("bivalent vs original","boosting vs not boosting")))
+  mutate(name = factor(name, levels = c("original_to_bivalent", "no_boost_to_original"), labels = c("bivalent vs original","any 4th dose vs no 4th dose")))
 
 p1 <- ggplot(data = day_outcomes, aes(x = t, y = effect_proportion * 100, fill = name)) +
   geom_area(alpha = 0.8) +

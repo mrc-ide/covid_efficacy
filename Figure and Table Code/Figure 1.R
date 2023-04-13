@@ -11,15 +11,15 @@ setwd(dirname(getActiveDocumentContext()$path))
 ##### LOAD THE PARAMETERS 
 ##################################
 
-load("../Model Fitting/Main/UKHSA_v6_65+_20220702_AZPD2=FALSE_SB=FALSE_NewDecay=TRUE_AddBst=FALSE_AltSev=FALSE_mcmc_chain.Rdata")  
+load("../Model Fitting/Main/UKHSA_v6pn_65+_20220702_AZPD2=FALSE_SB=FALSE_NewDecay=TRUE_AddBst=FALSE_AltSev=FALSE_mcmc_chain.Rdata")  
 
 draws <- sample_chains(mcmc, 5000)
 
 draws_transform <- draws %>%
   select(-sample, -AZ_ns_off ) %>%
-  mutate( ab50 = 10^(d2_PF + ni50),
-          ab50_s = 10^(d2_PF + ns50), 
-          ab50_d = 10^(d2_PF + nd50),
+  mutate( ab50 = 10^(ni50),
+          ab50_s = 10^(ns50), 
+          ab50_d = 10^(nd50),
           d1_AZ = 10^(d2_AZ + d1_AZ),
           d1_PF = 10^(d2_PF + d1_PF),
           d1_MD = 10^(d2_MD + d1_MD),

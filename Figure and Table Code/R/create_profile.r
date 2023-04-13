@@ -39,9 +39,15 @@ draw <-
   # nab titre distribution for a given vaccine product: draw from a log-normal distribution
   # here the first titre is dependent on the second but I suppose could do it the other way around
   
-  z2 <- rnorm(1, log10(mu_ab_d2), std10)
-  z3 <- log10(10^z2 * (mu_ab_d3/mu_ab_d2))
-  z1 <- log10(10^z2 * (mu_ab_d1/mu_ab_d2))
+#  z2 <- rnorm(1, log10(mu_ab_d2), std10)
+ # z3 <- log10(10^z2 * (mu_ab_d3/mu_ab_d2))
+#  z1 <- log10(10^z2 * (mu_ab_d1/mu_ab_d2))
+  
+  z2 <- log10(mu_ab_d2)
+  z3 <- log10(mu_ab_d3)
+  z1 <- log10(mu_ab_d1)
+  
+  
   
   # initiate titre vector
   nt <- rep(0, length(t))
@@ -57,7 +63,7 @@ draw <-
     nt[i] <- nt[i-1] + dr_vec[i-t_d2-1]
   }
   for (i in ((t_d2+t_d3+2):length(t))){
-    nt[i] <- nt[i-1] + dr_vec[i-t_d3-1]
+    nt[i] <- nt[i-1] + dr_vec[i-(t_d2+t_d3)-1]
   }
   
   nt <- exp(nt) # return to linear scale

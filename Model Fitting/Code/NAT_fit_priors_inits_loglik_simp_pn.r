@@ -19,7 +19,7 @@ df_params <- define_params(
   name = "AZ_ns_off",   min = -2,  max = 2,   init=runif(cores,-0.2,0.2), block =1, # nolint
   name = "k",           min = 0.5, max = 10,  init= 2.94+runif(cores,-0.05,0.05), block=1, # nolint
   name = "hl_s",        min = 1,   max = 150, init=90+runif(cores,10,10), block=1, # nolint
-  name = "hl_l",        min = 150, max = 3650,init=500+runif(cores,-50,50), block=1, # nolint
+  name = "hl_l",        min = 100, max = 3650,init=270+runif(cores,-50,50), block=1, # nolint
   name = "period_s",    min = 1,   max = 150, init=90+runif(cores,-10,10), block=1, # nolint
   name = "period_l",    min = 150, max = 1000,init=365+runif(cores,-50,50), block=1) # nolint
 
@@ -36,24 +36,24 @@ r_logprior <- function(params, misc) {
   
   params <- as.list(params)
   # calculate log-prior
-  ret <- dnorm(params$d1_AZ,   mean =-log10(2),  sd = log10(4), log = TRUE)+
-    dnorm(params$d1_PF,        mean =-log10(2),  sd = log10(4), log = TRUE)+
-    dnorm(params$d1_MD,        mean =-log10(2),  sd = log10(4), log = TRUE)+
-    dnorm(params$d2_AZ,        mean = log10(32/59/3.9),  sd = log10(1.2),log = TRUE)+
-    dnorm(params$d2_PF,        mean = log10(223/94/3.9),  sd = log10(1.2),log = TRUE)+
-    dnorm(params$d2_MD,        mean = log10(654/158/3.9),  sd = log10(1.2),log = TRUE)+
-    dnorm(params$om_red,       mean = 1.0,       sd =log10(4),log = TRUE)+    
-    dnorm(params$bst_AZ,       mean = log10(2),     sd = log10(4),log = TRUE)+
-    dnorm(params$bst_PF,       mean = log10(2),     sd = log10(4),log = TRUE)+
-    dnorm(params$bst_MD,       mean = log10(2),     sd = log10(4),log = TRUE)+
-    dnorm(params$ni50,         mean =-0.479,  sd = log10(2),log = TRUE)+
-    dnorm(params$ns50,         mean =-1.307,  sd = log10(2),log = TRUE)+
-    dnorm(params$nd50,         mean =-1.307,  sd = log10(2),log = TRUE)+
+  ret <- dnorm(params$d1_AZ,   mean =-log10(2),  sd = 0.6, log = TRUE)+
+    dnorm(params$d1_PF,        mean =-log10(2),  sd = 0.6, log = TRUE)+
+    dnorm(params$d1_MD,        mean =-log10(2),  sd = 0.6, log = TRUE)+
+    dnorm(params$d2_AZ,        mean = log10(32/59/3.9),  sd = 0.1,log = TRUE)+
+    dnorm(params$d2_PF,        mean = log10(223/94/3.9),  sd = 0.1,log = TRUE)+
+    dnorm(params$d2_MD,        mean = log10(654/158/3.9),  sd = 0.1,log = TRUE)+
+    dnorm(params$om_red,       mean = log10(10),    sd = log10(10),log = TRUE)+    
+    dnorm(params$bst_AZ,       mean = log10(2),     sd = 0.6,log = TRUE)+
+    dnorm(params$bst_PF,       mean = log10(2),     sd = 0.6,log = TRUE)+
+    dnorm(params$bst_MD,       mean = log10(2),     sd = 0.6,log = TRUE)+
+    dnorm(params$ni50,         mean =-0.7  ,  sd = 0.1,log = TRUE)+
+    dnorm(params$ns50,         mean =-1.52 ,  sd = 0.33,log = TRUE)+
+    dnorm(params$nd50,         mean =-1.52 ,  sd = 0.33,log = TRUE)+
     dnorm(params$AZ_ns_off,    mean =0,      sd = log10(2),log = TRUE)+
-    dnorm(params$k,            mean = 2.94,    sd = 1.0, log = TRUE)+
-    dnorm(params$hl_s,         mean = 58,     sd = 5.0,log = TRUE)+
-    dnorm(params$hl_l,         mean = 500,     sd = 100, log = TRUE)+
-    dnorm(params$period_s,     mean = 90,      sd = 20.0,log = TRUE)+
+    dnorm(params$k,            mean = 2.94,    sd = 0.6, log = TRUE)+
+    dnorm(params$hl_s,         mean = 58,     sd = 10.0,log = TRUE)+
+    dnorm(params$hl_l,         mean = 270,     sd = 200, log = TRUE)+
+    dnorm(params$period_s,     mean = 90,      sd = 30.0,log = TRUE)+
     dnorm(params$period_l,     mean = 365,     sd = 80, log = TRUE)
   
   # return
@@ -107,9 +107,9 @@ r_loglike <- function(params, data, misc) {
   }
 
   om_red      <- params$om_red
-  nic50[1]    <- params$ni50 +  d[5]  # all relative to PD2 PF
-  nic50[2]    <- params$ns50 +  d[5]
-  nic50[3]    <- params$nd50 +  d[5]
+  nic50[1]    <- params$ni50 # +  d[5]  # all relative to PD2 PF
+  nic50[2]    <- params$ns50 # +  d[5]
+  nic50[3]    <- params$nd50 # +  d[5]
   k           <- params$k
   hl_s        <- params$hl_s
   hl_l        <- params$hl_l

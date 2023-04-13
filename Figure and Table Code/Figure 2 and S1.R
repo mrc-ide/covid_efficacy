@@ -12,8 +12,17 @@ source("R/create_profile.R")
 ##### LOAD THE PARAMETERS AND DATA
 ##################################
 
-load("../Model Fitting/Main/UKHSA_v6_65+_20220702_AZPD2=FALSE_SB=FALSE_NewDecay=TRUE_AddBst=FALSE_AltSev=FALSE_mcmc_chain.Rdata")  
+## main fits
+load("../Model Fitting/Main/UKHSA_v6pn_65+_20220702_AZPD2=FALSE_SB=FALSE_NewDecay=TRUE_AddBst=FALSE_AltSev=FALSE_mcmc_chain.Rdata")  
+
 all_data <- read.csv("../Model Fitting/Data/UKHSA_VE_Jun22_65+.csv")
+
+## fits using 18-64 age group
+
+#load("../Model Fitting/Main/UKHSA_v6pn_20220702_AZPD2=FALSE_SB=FALSE_NewDecay=TRUE_AddBst=FALSE_AltSev=FALSE_mcmc_chain.Rdata") 
+#all_data <- read.csv("../Model Fitting/Data/UKHSA_VE_Jun22_18_64.csv")
+
+
 
 chain <- sample_chains(mcmc, 10000)
 
@@ -48,9 +57,9 @@ d3_AZ    <- 10^(posterior_median$bst_AZ)
 d3_PF    <- 10^(posterior_median$bst_PF)
 d3_MD    <- 10^(posterior_median$bst_MD)
 
-ab_50       <- 10^( log10_d2_PF + posterior_median$ni50) 
-ab_50_severe <- 10^( log10_d2_PF + posterior_median$ns50)
-ab_50_death  <- 10^( log10_d2_PF + posterior_median$nd50)
+ab_50       <- 10^(posterior_median$ni50) 
+ab_50_severe <- 10^(posterior_median$ns50)
+ab_50_death  <- 10^(posterior_median$nd50)
 
 ab_50 <-rep(ab_50,7) 
 ab_50_severe <-rep(ab_50_severe,7)
@@ -125,6 +134,7 @@ summary_stats <- NULL
 #####################################################################################
 ### loop through the vaccines to calculate the profiles of NAT and efficacy over time
 #####################################################################################
+
 
 for (m in 1:2){ #1 for delta, 2 for omicron
 for (j in 1:7){
@@ -234,6 +244,19 @@ df <- summary_stats %>%
   mutate(type = factor(type, levels = c("Titre", "Efficacy", "Efficacy_Severe", "Death"), labels = c("IL", "mild disease", "hospitalisation", "death"))) %>%
   mutate(variant = factor(variant, levels = c(1,2), labels = c("delta", "omicron")))
 
+data_to_output <- df %>%
+  mutate(vaccines = case_when(j==1 ~ "AZ-AZ",
+                       j==2 ~ "AZ-PF",
+                       j==3 ~ "AZ-MD",
+                       j==4 ~ "PF-PF",
+                       j==5 ~ "PF-MD",
+                       j==6 ~ "MD-PF",
+                       j==7 ~ "MD-MD")
+  ) %>%
+  select(-Label, -vaccine, -vaccine_num, -booster_num, -dose, -endpoint, -t_min, -t_max, -control_I, -case_I, -VE, -N,
+         - L95, -U95, -Age, -t_orig, -t_fit, -j)
+saveRDS(data_to_output, "../Figures/vaccine_profiles.rds")
+
 plots <- NULL
 
 plot_efficacy_function <- function(d, i){
@@ -320,43 +343,30 @@ FGHHH
 IJKKK
 LMNNN
 OPQQQ
-"
-
-plot_spacer() + 
-  wrap_elements(grid::textGrob('immunity level')) +
-  wrap_elements(grid::textGrob('mild disease')) +
-  wrap_elements(grid::textGrob('hospitalisation')) +
-  wrap_elements(grid::textGrob('death')) +
-wrap_elements(grid::textGrob('AZ-AZ')) + plots[[1]] + plots[[2]] + 
-  grid::textGrob('AZ-PF')  + plots[[3]] + plots[[4]] +
-  grid::textGrob('AZ-MD')  + plots[[5]] + plots[[6]] +
-  plot_spacer() + grid::textGrob('time (days)') + grid::textGrob('time (days)') +
-  plot_layout(guides = "collect", design = layout, widths = c(0.3,1,1,1,1), heights = c(0.2, 1, 1, 1, 0.1)) & theme(legend.position = 'bottom')
-
-ggsave("../Figures/Figure S1.png", height = 8, width = 10)
-
-layout <- "
-ABCDE
-FGHHH
-IJKKK
-LMNNN
-OPQQQ
 RSTTT
+UVWWW
+XYZZZ
+XYZZZ
 "
 plot_spacer() + 
   wrap_elements(grid::textGrob('immunity level')) +
   wrap_elements(grid::textGrob('mild disease')) +
   wrap_elements(grid::textGrob('hospitalisation')) +
   wrap_elements(grid::textGrob('death')) +
+  wrap_elements(grid::textGrob('AZ-AZ')) + plots[[1]] + plots[[2]] + 
+  wrap_elements(grid::textGrob('AZ-PF'))  + plots[[3]] + plots[[4]] +
+  wrap_elements(grid::textGrob('AZ-MD'))  + plots[[5]] + plots[[6]] +
   wrap_elements(grid::textGrob('PF-PF')) + plots[[7]] + plots[[8]] + 
   wrap_elements(grid::textGrob('PF-MD')) + plots[[9]] + plots[[10]] + 
   wrap_elements(grid::textGrob('MD-PF')) + plots[[11]] + plots[[12]] + 
   wrap_elements(grid::textGrob('MD-MD')) + plots[[13]] + plots[[14]]+
   plot_spacer() + grid::textGrob('time (days)') + grid::textGrob('time (days)') +
-  plot_layout(guides = "collect", design = layout, widths = c(0.3,1,1,1,1), heights = c(0.2, 1, 1, 1, 1, 0.2)) & theme(legend.position = 'bottom')
+  plot_layout(guides = "collect", design = layout, widths = c(0.3,1,1,1,1), heights = c(0.2, 1, 1, 1, 1, 1,1,1,0.2)) & theme(legend.position = 'bottom')
+
+ggsave("../Figures/Figure 2.png", height = 16, width = 10)
+#ggsave("../Figures/Figure S1.png", height = 16, width = 10)
 
 
-ggsave("../Figures/Figure 2.png", height = 10, width = 10)
 
 
 
