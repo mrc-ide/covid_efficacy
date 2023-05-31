@@ -45,21 +45,21 @@ log10_d2_AZ <- posterior_median$d2_AZ
 log10_d2_MD <- posterior_median$d2_MD
 
 
-d1_AZ       <- 10^( log10_d2_AZ + posterior_median$d1_AZ)
-d1_PF       <- 10^( log10_d2_PF + posterior_median$d1_PF)
-d1_MD       <- 10^( log10_d2_MD + posterior_median$d1_MD)
+d1_AZ       <- log10_d2_AZ + posterior_median$d1_AZ
+d1_PF       <- log10_d2_PF + posterior_median$d1_PF
+d1_MD       <- log10_d2_MD + posterior_median$d1_MD
 
-d2_AZ    <- 10^( posterior_median$d2_AZ)
-d2_PF    <- 10^( posterior_median$d2_PF)
-d2_MD    <- 10^( posterior_median$d2_MD)
+d2_AZ    <- posterior_median$d2_AZ
+d2_PF    <- posterior_median$d2_PF
+d2_MD    <- posterior_median$d2_MD
 
-d3_AZ    <- 10^(posterior_median$bst_AZ)
-d3_PF    <- 10^(posterior_median$bst_PF)
-d3_MD    <- 10^(posterior_median$bst_MD)
+d3_AZ    <- posterior_median$bst_AZ
+d3_PF    <- posterior_median$bst_PF
+d3_MD    <- posterior_median$bst_MD
 
-ab_50       <- 10^(posterior_median$ni50) 
-ab_50_severe <- 10^(posterior_median$ns50)
-ab_50_death  <- 10^(posterior_median$nd50)
+ab_50       <- posterior_median$ni50 
+ab_50_severe <- posterior_median$ns50
+ab_50_death  <- posterior_median$nd50
 
 ab_50 <-rep(ab_50,7) 
 ab_50_severe <-rep(ab_50_severe,7)
@@ -73,13 +73,13 @@ period_s    <- posterior_median$period_s
 # fixed parameter
 std10 <- 0.44 # Pooled standard deviation of antibody level on log10 scale
 
-om_red <- 10^(posterior_median$om_red)
-vfr <- c(1,om_red)
+om_red <- posterior_median$om_red
+vfr <- c(0,om_red)
 
 mu_ab_d1 <- c(d1_AZ, d1_AZ, d1_AZ, d1_PF, d1_PF, d1_MD, d1_MD)
 mu_ab_d2 <- c(d2_AZ, d2_AZ, d2_AZ, d2_PF, d2_PF, d2_MD, d2_MD)
 mu_ab_d3 <- c(d3_AZ, d3_PF, d3_MD, d3_PF, d3_MD, d3_PF, d3_MD)   
-dose_3_fold_increase <- mu_ab_d3/mu_ab_d2
+
 
 # transforms
 dr_s <- -log(2)/hl_s  # Corresponding decay rate in days for half life above
@@ -139,9 +139,9 @@ summary_stats <- NULL
 for (m in 1:2){ #1 for delta, 2 for omicron
 for (j in 1:7){
   
-          mu_ab_d1 <- param_list$mu_ab_d1[j]/vfr[m]
-          mu_ab_d2 <- param_list$mu_ab_d2[j]/vfr[m]
-          mu_ab_d3 <- param_list$mu_ab_d3[j]/vfr[m]
+          mu_ab_d1 <- param_list$mu_ab_d1[j] - vfr[m]
+          mu_ab_d2 <- param_list$mu_ab_d2[j] - vfr[m]
+          mu_ab_d3 <- param_list$mu_ab_d3[j] - vfr[m]
           dr_s <- param_list$dr_s[j]
           dr_l <- param_list$dr_l[j]
           period_s <- param_list$period_s[j]

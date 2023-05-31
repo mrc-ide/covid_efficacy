@@ -14,14 +14,13 @@ setwd(dirname(getActiveDocumentContext()$path))
 
 source("R/vx_profile.R")
 
-
 ##################################
 ##### LOAD THE PARAMETERS 
 ##################################
 
 load("../Model Fitting/Main/UKHSA_v6pn_65+_20220702_AZPD2=FALSE_SB=FALSE_NewDecay=TRUE_AddBst=FALSE_AltSev=FALSE_mcmc_chain.Rdata")  
+## sensitivity - under 65
 #load("../Model Fitting/Main/UKHSA_v6pn_20220702_AZPD2=FALSE_SB=FALSE_NewDecay=TRUE_AddBst=FALSE_AltSev=FALSE_mcmc_chain.Rdata") 
-
 
 chain <- mcmc$output %>%
   filter(phase == "sampling") %>%
@@ -47,7 +46,7 @@ draws_transform <- draws %>%
           d3_MD = 10^(bst_MD),
           om_red = 10^(om_red)) %>%
   select(-ni50, -ns50, -nd50, -bst_PF, -bst_AZ, -bst_MD) 
-  
+
 posterior_median_transform <-draws_transform %>%
   summarise( 
     across(where(is.numeric), median)
@@ -269,35 +268,62 @@ save_as_docx("Efficacy against infection" = tb.inf,
                "Efficacy against death" = tb.death,
                path = "../Tables/Table2.docx")
 
-save_as_docx("Efficacy against infection" = tb.inf,
-             "Efficacy against severe disease" = tb.sev,
-             "Efficacy against death" = tb.death,
-             path = "../Tables/TableS2.docx")
-  
+#save_as_docx("Efficacy against infection" = tb.inf,
+#             "Efficacy against severe disease" = tb.sev,
+#             "Efficacy against death" = tb.death,
+ #            path = "../Tables/TableS2.docx")
+
+
 ################################################################################
 ### TABLE 3 ####################################################################
 ################################################################################
 
 
-# Moderna bivalent vaccine against BA1/2
+# Variant-boosting against any strain - from Khoury et al. Nat Med 2023
 
-ratio <- 2372/1473  # ratio of day 29 NAT against BA1/2 for the bivalent vaccine compared to monovalent vaccine = 1.61
-bivalent_scaling <- 1/ratio
+ratio_m <- 1.61
+ratio_l <- 1.5
+ratio_u <- 1.8
 
-df_raw_bivalent <- df_raw %>%
+ratio_sd <- (ratio_u - ratio_l)/(2*1.96)
+ratio <- rnorm(1001,ratio_m,ratio_sd)
+
+df_raw_bivalent <- cbind(df_raw,ratio) %>%
+  mutate(bivalent_scaling = 1/ratio) %>%
   mutate(om_red = om_red*bivalent_scaling)
-
 
 df_MD_MD <- df_raw_bivalent %>%
   mutate(vaccine = "MD_MD",
          d1 = d1_MD,
          d2 = d2_MD,
          d3 = bst_MD,
-         ab50 = d2_PF + ni50,
-         ab50_s = d2_PF + ns50, 
-         ab50_d = d2_PF + nd50) %>% 
+         ab50 = ni50,
+         ab50_s = ns50, 
+         ab50_d = nd50) %>% 
   select(-c(d1_PF, d1_AZ, d1_MD, d2_PF, d2_AZ, d2_MD, bst_PF,bst_AZ, bst_MD,
-            AZ_ns_off,ni50,ns50,nd50, period_l)) 
+            AZ_ns_off,ni50,ns50,nd50, period_l, ratio, bivalent_scaling)) 
+
+df_AZ_AZ <- df_raw_bivalent %>%
+  mutate(vaccine = "AZ_AZ",
+         d1 = d1_AZ,
+         d2 = d2_AZ,
+         d3 = bst_AZ,
+         ab50 =  ni50,
+         ab50_s =  ns50, 
+         ab50_d =  nd50) %>% 
+  select(-c(d1_PF, d1_AZ, d1_MD, d2_PF, d2_AZ, d2_MD, bst_PF,bst_AZ, bst_MD,
+            AZ_ns_off,ni50,ns50,nd50, period_l, ratio, bivalent_scaling)) 
+
+df_PF_PF <- df_raw_bivalent %>%
+  mutate(vaccine = "PF_PF",
+         d1 = d1_PF,
+         d2 = d2_PF,
+         d3 = bst_PF,
+         ab50 =  ni50,
+         ab50_s =  ns50, 
+         ab50_d =  nd50) %>% 
+  select(-c(d1_PF, d1_AZ, d1_MD, d2_PF, d2_AZ, d2_MD, bst_PF,bst_AZ, bst_MD,
+            AZ_ns_off,ni50,ns50,nd50, period_l, ratio, bivalent_scaling)) 
 
 df <- df_MD_MD
 
@@ -390,6 +416,292 @@ save_as_docx("Efficacy against infection" = tb.inf,
              "Efficacy against death" = tb.death,
              path = "../Tables/Table3.docx")
 
+### same table for AZ ###
+
+df <- df_AZ_AZ
+
+r5 <- 
+  # Create input options
+  expand_grid(
+    vfr = c(1),
+    vaccine = c("AZ_AZ"),
+    sample = unique(df$sample)) %>%
+  # Join with MCMC samples
+  left_join(df, by = c("vaccine", "sample")) %>%
+  # Apply vaccine profile function to each row
+  mutate(profile = pmap(., vx_profile)) %>%
+  # Format
+  unnest(cols = c(profile)) %>%
+  pivot_longer(cols = c(Titre_d1, Titre_d2, Titre_d3, Efficacy_d1, Efficacy_d2, Efficacy_d3, Severe_Efficacy_d1,Severe_Efficacy_d2, Severe_Efficacy_d3, Death_Efficacy_d1, Death_Efficacy_d2,Death_Efficacy_d3), names_to = "group", values_to = "Value") %>% 
+  mutate(dose = case_when(group == "Titre_d1" | group == "Efficacy_d1" | group == "Severe_Efficacy_d1" | group == "Death_Efficacy_d1"~ 1,
+                          group == "Titre_d2" | group == "Efficacy_d2" | group == "Severe_Efficacy_d2" | group == "Death_Efficacy_d2" ~ 2,
+                          group == "Titre_d3" | group == "Efficacy_d3" | group == "Severe_Efficacy_d3" | group == "Death_Efficacy_d3"~ 3 )) %>%
+  mutate(group = substr(group, 1, nchar(group) - 3))
+
+
+# posterior median
+r5a <- r5 %>%
+  filter(sample==0) %>%
+  mutate(median = Value)
+
+# mcmc samples
+r5b <- r5 %>%
+  filter(sample>0) %>%
+  filter(dose>1) %>%
+  group_by(vfr,vaccine,group,dose,t) %>%
+  summarise(upper = quantile(Value, 0.975),
+            lower = quantile(Value, 0.025),
+  ) 
+
+summary_stats <- left_join(r5a,r5b)
+
+
+table1 <- summary_stats %>%
+  filter(group=="Efficacy"| group=="Severe_Efficacy" | group=="Death_Efficacy") %>%
+  mutate(median = round(median,digits=1), lower = round(lower,digits=1), upper = round(upper,digits=1)) %>%
+  mutate(vaccine_efficacy = paste0(median, " (",lower,"-",upper,")")) 
+
+tb_dose_2 <- table1 %>%
+  filter(dose==2) %>%
+  filter(t==1+90 | t==1+180 ) %>%
+  mutate(period = case_when(t==91 ~ "90d pd2",
+                            t==181 ~ "180d pd2") )
+
+tb_dose_3 <- table1 %>%
+  filter(dose==3) %>% 
+  filter(t==1+30 | t==1+60  | t==1+90 | t==1+120 | t==1+150 | t==1+180 | t==1+365) %>%
+  mutate(period = case_when(t==31 ~ "30d pb",
+                            t==61 ~ "60d pb",
+                            t==91 ~ "90d pb",
+                            t==121 ~ "120d pb",
+                            t==151 ~ "150d pb",
+                            t==181 ~ "180d pb",
+                            t==366 ~ "365d pb") )
+
+tb <- rbind(tb_dose_2,tb_dose_3)
+tb <- subset(tb,select=c(vfr,vaccine,group,vaccine_efficacy,period))
+
+
+tb.inf <- tb %>%
+  filter(group == "Efficacy") %>%
+  pivot_wider(id_cols = c(vaccine, vfr), names_from = period, values_from = vaccine_efficacy) %>%
+  arrange(vaccine, vfr) %>%
+  rename(Vaccine = vaccine, "0 = delta, 1 = omicron" = vfr) %>% 
+  flextable()
+
+tb.sev <- tb %>%
+  filter(group == "Severe_Efficacy") %>%
+  pivot_wider(id_cols = c(vaccine, vfr), names_from = period, values_from = vaccine_efficacy) %>%
+  arrange(vaccine, vfr) %>%
+  rename(Vaccine = vaccine, "0 = delta, 1 = omicron" = vfr) %>% 
+  flextable()
+
+tb.death <- tb %>%
+  filter(group == "Death_Efficacy") %>%
+  pivot_wider(id_cols = c(vaccine, vfr), names_from = period, values_from = vaccine_efficacy) %>%
+  arrange(vaccine, vfr) %>%
+  rename(Vaccine = vaccine, "0 = delta, 1 = omicron" = vfr) %>% 
+  flextable()
+
+
+save_as_docx("Efficacy against infection" = tb.inf,
+             "Efficacy against severe disease" = tb.sev,
+             "Efficacy against death" = tb.death,
+             path = "../Tables/TableS7.docx")
+
+### same table for PF ###
+
+df <- df_PF_PF
+
+r6 <- 
+  # Create input options
+  expand_grid(
+    vfr = c(1),
+    vaccine = c("PF_PF"),
+    sample = unique(df$sample)) %>%
+  # Join with MCMC samples
+  left_join(df, by = c("vaccine", "sample")) %>%
+  # Apply vaccine profile function to each row
+  mutate(profile = pmap(., vx_profile)) %>%
+  # Format
+  unnest(cols = c(profile)) %>%
+  pivot_longer(cols = c(Titre_d1, Titre_d2, Titre_d3, Efficacy_d1, Efficacy_d2, Efficacy_d3, Severe_Efficacy_d1,Severe_Efficacy_d2, Severe_Efficacy_d3, Death_Efficacy_d1, Death_Efficacy_d2,Death_Efficacy_d3), names_to = "group", values_to = "Value") %>% 
+  mutate(dose = case_when(group == "Titre_d1" | group == "Efficacy_d1" | group == "Severe_Efficacy_d1" | group == "Death_Efficacy_d1"~ 1,
+                          group == "Titre_d2" | group == "Efficacy_d2" | group == "Severe_Efficacy_d2" | group == "Death_Efficacy_d2" ~ 2,
+                          group == "Titre_d3" | group == "Efficacy_d3" | group == "Severe_Efficacy_d3" | group == "Death_Efficacy_d3"~ 3 )) %>%
+  mutate(group = substr(group, 1, nchar(group) - 3))
+
+
+# posterior median
+r6a <- r6 %>%
+  filter(sample==0) %>%
+  mutate(median = Value)
+
+# mcmc samples
+r6b <- r6 %>%
+  filter(sample>0) %>%
+  filter(dose>1) %>%
+  group_by(vfr,vaccine,group,dose,t) %>%
+  summarise(upper = quantile(Value, 0.975),
+            lower = quantile(Value, 0.025),
+  ) 
+
+summary_stats <- left_join(r6a,r6b)
+
+
+table1 <- summary_stats %>%
+  filter(group=="Efficacy"| group=="Severe_Efficacy" | group=="Death_Efficacy") %>%
+  mutate(median = round(median,digits=1), lower = round(lower,digits=1), upper = round(upper,digits=1)) %>%
+  mutate(vaccine_efficacy = paste0(median, " (",lower,"-",upper,")")) 
+
+tb_dose_2 <- table1 %>%
+  filter(dose==2) %>%
+  filter(t==1+90 | t==1+180 ) %>%
+  mutate(period = case_when(t==91 ~ "90d pd2",
+                            t==181 ~ "180d pd2") )
+
+tb_dose_3 <- table1 %>%
+  filter(dose==3) %>% 
+  filter(t==1+30 | t==1+60  | t==1+90 | t==1+120 | t==1+150 | t==1+180 | t==1+365) %>%
+  mutate(period = case_when(t==31 ~ "30d pb",
+                            t==61 ~ "60d pb",
+                            t==91 ~ "90d pb",
+                            t==121 ~ "120d pb",
+                            t==151 ~ "150d pb",
+                            t==181 ~ "180d pb",
+                            t==366 ~ "365d pb") )
+
+tb <- rbind(tb_dose_2,tb_dose_3)
+tb <- subset(tb,select=c(vfr,vaccine,group,vaccine_efficacy,period))
+
+
+tb.inf <- tb %>%
+  filter(group == "Efficacy") %>%
+  pivot_wider(id_cols = c(vaccine, vfr), names_from = period, values_from = vaccine_efficacy) %>%
+  arrange(vaccine, vfr) %>%
+  rename(Vaccine = vaccine, "0 = delta, 1 = omicron" = vfr) %>% 
+  flextable()
+
+tb.sev <- tb %>%
+  filter(group == "Severe_Efficacy") %>%
+  pivot_wider(id_cols = c(vaccine, vfr), names_from = period, values_from = vaccine_efficacy) %>%
+  arrange(vaccine, vfr) %>%
+  rename(Vaccine = vaccine, "0 = delta, 1 = omicron" = vfr) %>% 
+  flextable()
+
+tb.death <- tb %>%
+  filter(group == "Death_Efficacy") %>%
+  pivot_wider(id_cols = c(vaccine, vfr), names_from = period, values_from = vaccine_efficacy) %>%
+  arrange(vaccine, vfr) %>%
+  rename(Vaccine = vaccine, "0 = delta, 1 = omicron" = vfr) %>% 
+  flextable()
+
+
+save_as_docx("Efficacy against infection" = tb.inf,
+             "Efficacy against severe disease" = tb.sev,
+             "Efficacy against death" = tb.death,
+             path = "../Tables/TableS6.docx")
+
+# Variant-boosting against homologous strain
+
+ratio_m <- 1.85
+ratio_l <- 1.6
+ratio_u <- 2.1
+ratio_sd <- (ratio_u - ratio_l)/(2*1.96)
+ratio <- rnorm(1001,ratio_m,ratio_sd)
+
+df_raw_bivalent <- cbind(df_raw,ratio) %>%
+  mutate(bivalent_scaling = 1/ratio) %>%
+  mutate(om_red = om_red*bivalent_scaling)
+
+df_MD_MD <- df_raw_bivalent %>%
+  mutate(vaccine = "MD_MD",
+         d1 = d1_MD,
+         d2 = d2_MD,
+         d3 = bst_MD,
+         ab50 = ni50,
+         ab50_s = ns50, 
+         ab50_d = nd50) %>% 
+  select(-c(d1_PF, d1_AZ, d1_MD, d2_PF, d2_AZ, d2_MD, bst_PF,bst_AZ, bst_MD,
+            AZ_ns_off,ni50,ns50,nd50, period_l, ratio, bivalent_scaling)) 
+
+df <- df_MD_MD
+
+r3 <- 
+  # Create input options
+  expand_grid(
+    vfr = c(1),
+    vaccine = c("MD_MD"),
+    sample = unique(df$sample)) %>%
+  # Join with MCMC samples
+  left_join(df, by = c("vaccine", "sample")) %>%
+  # Apply vaccine profile function to each row
+  mutate(profile = pmap(., vx_profile)) %>%
+  # Format
+  unnest(cols = c(profile)) %>%
+  pivot_longer(cols = c(Titre_d1, Titre_d2, Titre_d3, Efficacy_d1, Efficacy_d2, Efficacy_d3, Severe_Efficacy_d1,Severe_Efficacy_d2, Severe_Efficacy_d3, Death_Efficacy_d1, Death_Efficacy_d2,Death_Efficacy_d3), names_to = "group", values_to = "Value") %>% 
+  mutate(dose = case_when(group == "Titre_d1" | group == "Efficacy_d1" | group == "Severe_Efficacy_d1" | group == "Death_Efficacy_d1"~ 1,
+                          group == "Titre_d2" | group == "Efficacy_d2" | group == "Severe_Efficacy_d2" | group == "Death_Efficacy_d2" ~ 2,
+                          group == "Titre_d3" | group == "Efficacy_d3" | group == "Severe_Efficacy_d3" | group == "Death_Efficacy_d3"~ 3 )) %>%
+  mutate(group = substr(group, 1, nchar(group) - 3))
+
+
+# posterior median
+r3a <- r3 %>%
+  filter(sample==0) %>%
+  mutate(median = Value)
+
+# Variant-boosting against heterologous strain
+
+ratio_m <- 1.47
+ratio_l <- 1.3
+ratio_u <- 1.7
+ratio_sd <- (ratio_u - ratio_l)/(2*1.96)
+ratio <- rnorm(1001,ratio_m,ratio_sd)
+
+df_raw_bivalent <- cbind(df_raw,ratio) %>%
+  mutate(bivalent_scaling = 1/ratio) %>%
+  mutate(om_red = om_red*bivalent_scaling)
+
+df_MD_MD <- df_raw_bivalent %>%
+  mutate(vaccine = "MD_MD",
+         d1 = d1_MD,
+         d2 = d2_MD,
+         d3 = bst_MD,
+         ab50 = ni50,
+         ab50_s = ns50, 
+         ab50_d = nd50) %>% 
+  select(-c(d1_PF, d1_AZ, d1_MD, d2_PF, d2_AZ, d2_MD, bst_PF,bst_AZ, bst_MD,
+            AZ_ns_off,ni50,ns50,nd50, period_l, ratio, bivalent_scaling)) 
+
+#df <- bind_rows(df_AZ_AZ, df_AZ_PF, df_AZ_MD, df_PF_PF, df_PF_MD, df_MD_PF, df_MD_MD) 
+df <- df_MD_MD
+
+r4 <- 
+  # Create input options
+  expand_grid(
+    vfr = c(1),
+    vaccine = c("MD_MD"),
+    sample = unique(df$sample)) %>%
+  # Join with MCMC samples
+  left_join(df, by = c("vaccine", "sample")) %>%
+  # Apply vaccine profile function to each row
+  mutate(profile = pmap(., vx_profile)) %>%
+  # Format
+  unnest(cols = c(profile)) %>%
+  pivot_longer(cols = c(Titre_d1, Titre_d2, Titre_d3, Efficacy_d1, Efficacy_d2, Efficacy_d3, Severe_Efficacy_d1,Severe_Efficacy_d2, Severe_Efficacy_d3, Death_Efficacy_d1, Death_Efficacy_d2,Death_Efficacy_d3), names_to = "group", values_to = "Value") %>% 
+  mutate(dose = case_when(group == "Titre_d1" | group == "Efficacy_d1" | group == "Severe_Efficacy_d1" | group == "Death_Efficacy_d1"~ 1,
+                          group == "Titre_d2" | group == "Efficacy_d2" | group == "Severe_Efficacy_d2" | group == "Death_Efficacy_d2" ~ 2,
+                          group == "Titre_d3" | group == "Efficacy_d3" | group == "Severe_Efficacy_d3" | group == "Death_Efficacy_d3"~ 3 )) %>%
+  mutate(group = substr(group, 1, nchar(group) - 3))
+
+
+# posterior median
+r4a <- r4 %>%
+  filter(sample==0) %>%
+  mutate(median = Value)
+
+
 ################################################################################
 ### DATA FOR FIGURE 3 ####################################################################
 ################################################################################
@@ -413,8 +725,23 @@ df_bb <- r2a %>%
   mutate(VE_bivalent_boost = median) %>%
   select(c(t,group,VE_bivalent_boost))
 
+df_hombb <- r3a %>%
+  filter((vaccine=="MD_MD") & (vfr==1) & (dose==3)) %>%
+  filter(t<=365) %>%
+  mutate(VE_bivalent_hom_boost = median) %>%
+  select(c(t,group,VE_bivalent_hom_boost))
+
+df_hetbb <- r4a %>%
+  filter((vaccine=="MD_MD") & (vfr==1) & (dose==3)) %>%
+  filter(t<=365) %>%
+  mutate(VE_bivalent_het_boost = median) %>%
+  select(c(t,group,VE_bivalent_het_boost))
+
 combined <- left_join(df_nob, df_ob)
 combined <- left_join(combined, df_bb)
+combined <- left_join(combined, df_hombb)
+combined <- left_join(combined, df_hetbb)
+
 
 combined <- combined %>%
   filter(group != "Titre") %>%
@@ -433,9 +760,11 @@ combined <- combined %>%
 # trajectories
 
 df_trajectories <- combined %>%
-  select(t, outcome, VE_original_boost, VE_bivalent_boost, VE_no_boost) %>%
-  pivot_longer(cols = c(VE_original_boost, VE_bivalent_boost, VE_no_boost)) %>%
-  mutate(name = factor(name, levels = c("VE_no_boost", "VE_original_boost", "VE_bivalent_boost"), labels = c("3 doses only", "4th dose monovalent", "4th dose bivalent"))) 
+  select(t, outcome, VE_original_boost, VE_bivalent_boost, VE_bivalent_hom_boost, VE_bivalent_het_boost, VE_no_boost) %>%
+  pivot_longer(cols = c(VE_original_boost, VE_bivalent_boost, VE_bivalent_hom_boost, VE_bivalent_het_boost,VE_no_boost)) %>%
+  mutate(name = factor(name, levels = c("VE_no_boost", "VE_original_boost", "VE_bivalent_boost", "VE_bivalent_hom_boost", "VE_bivalent_het_boost"), 
+                       labels = c("3 doses only", "4th dose monovalent", "4th dose bivalent against any strain", 
+                                  "4th dose bivalent against homologous strain","4th dose bivalent against heterologous strain"))) 
 
 p2 <- ggplot(df_trajectories, aes(x = t, y = value, col = name)) +
   geom_line() +
@@ -445,7 +774,7 @@ p2 <- ggplot(df_trajectories, aes(x = t, y = value, col = name)) +
         panel.border = element_blank(),
         axis.line = element_line(),
         legend.text.align = 0) +
-  scale_color_manual(values = c("#1b9e77", "#d95f02", "#7570b3")) +
+  scale_color_manual(values = c("#1b9e77", "#d95f02", "#7570b3", "#e7298a", "#66a61e")) +
   labs(x = "time following dose 4 (days)", y = "effectiveness (%)", col = "")
 
 p2

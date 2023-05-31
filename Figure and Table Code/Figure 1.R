@@ -17,19 +17,19 @@ draws <- sample_chains(mcmc, 5000)
 
 draws_transform <- draws %>%
   select(-sample, -AZ_ns_off ) %>%
-  mutate( ab50 = 10^(ni50),
-          ab50_s = 10^(ns50), 
-          ab50_d = 10^(nd50),
-          d1_AZ = 10^(d2_AZ + d1_AZ),
-          d1_PF = 10^(d2_PF + d1_PF),
-          d1_MD = 10^(d2_MD + d1_MD),
-          d2_PF = 10^(d2_PF),
-          d2_AZ = 10^(d2_AZ),
-          d2_MD = 10^(d2_MD),
-          d3_PF = 10^(bst_PF),
-          d3_AZ = 10^(bst_AZ),
-          d3_MD = 10^(bst_MD),
-          om_red = 10^(om_red)) %>%
+  mutate( ab50 = ni50,
+          ab50_s = ns50, 
+          ab50_d = nd50,
+          d1_AZ = d2_AZ + d1_AZ,
+          d1_PF = d2_PF + d1_PF,
+          d1_MD = d2_MD + d1_MD,
+          d2_PF = d2_PF,
+          d2_AZ = d2_AZ,
+          d2_MD = d2_MD,
+          d3_PF = bst_PF,
+          d3_AZ = bst_AZ,
+          d3_MD = bst_MD,
+          om_red = om_red) %>%
   select(-ni50, -ns50, -nd50, -bst_PF, -bst_AZ, -bst_MD) 
 
 posterior_median_transform <-draws_transform %>%
@@ -56,9 +56,9 @@ for (i in (1:length(kv))){
   nd50         <- nd50v[i]
   k            <- kv[i] # shape parameter of efficacy curve
   
-  ef_infection <- 1 / (1 + exp(-k * (log10(n) - log10(ni50))))
-  ef_severe    <- 1 / (1 + exp(-k * (log10(n) - log10(ns50))))
-  ef_death    <- 1 / (1 + exp(-k * (log10(n) - log10(nd50))))
+  ef_infection <- 1 / (1 + exp(-k * (log10(n) - ni50)))
+  ef_severe    <- 1 / (1 + exp(-k * (log10(n) - ns50)))
+  ef_death    <- 1 / (1 + exp(-k * (log10(n) - nd50)))
   
   r <- data.frame(n=n, run=rep(i,length(n)), ef_infection=ef_infection, ef_severe=ef_severe, ef_death=ef_death)  
   ru<-rbind(ru,r)
@@ -81,22 +81,22 @@ nd50      <- posterior_median_transform$ab50_d
 k         <- posterior_median_transform$k
 
 
-ef_infection <- 1 / (1 + exp(-k * (log10(n) - log10(ni50))))
-ef_severe <- 1 / (1 + exp(-k * (log10(n) - log10(ns50))))
-ef_death <- 1 / (1 + exp(-k * (log10(n) - log10(nd50))))
+ef_infection <- 1 / (1 + exp(-k * (log10(n) - ni50)))
+ef_severe <- 1 / (1 + exp(-k * (log10(n) - ns50)))
+ef_death <- 1 / (1 + exp(-k * (log10(n) - nd50)))
 
 r1 <- data.frame(n,ef_infection,ef_severe, ef_death, model = "refitted")
 
 
 # include original Khoury et al Nat Med curves
-ni50_2 <- 0.2
-ns50_2 <- 0.03
+ni50_2 <- log10(0.2)
+ns50_2 <- log10(0.03)
 k_2 <- 2.94
-vfr <- 3.9
+vfr <- log10(3.9)
 
 
-ef_infection <- 1 / (1 + exp(-k_2 * (log10(n/vfr) - log10(ni50_2))))
-ef_severe <- 1 / (1 + exp(-k_2 * (log10(n/vfr) - log10(ns50_2))))
+ef_infection <- 1 / (1 + exp(-k_2 * (log10(n) - vfr - ni50_2)))
+ef_severe <- 1 / (1 + exp(-k_2 * (log10(n) - vfr - ns50_2)))
 
 r2 <- data.frame(n,ef_infection,ef_severe, ef_death = NA, model = "Khoury et al")
 
@@ -164,9 +164,9 @@ for (i in (1:length(kv))){
   nd50         <- nd50v[i]
   k            <- kv[i] # shape parameter of efficacy curve
   
-  ef_infection <- 1 / (1 + exp(-k * (log10(n/om_scalingv[i]) - log10(ni50))))
-  ef_severe    <- 1 / (1 + exp(-k * (log10(n/om_scalingv[i]) - log10(ns50))))
-  ef_death    <- 1 / (1 + exp(-k * (log10(n/om_scalingv[i]) - log10(nd50))))
+  ef_infection <- 1 / (1 + exp(-k * (log10(n) - om_scalingv[i] - ni50)))
+  ef_severe    <- 1 / (1 + exp(-k * (log10(n) - om_scalingv[i] - ns50)))
+  ef_death    <- 1 / (1 + exp(-k * (log10(n) -  om_scalingv[i] - nd50)))
   
   r <- data.frame(n=n, run=rep(i,length(n)), ef_infection=ef_infection, ef_severe=ef_severe, ef_death=ef_death)  
   ru<-rbind(ru,r)
@@ -191,21 +191,21 @@ k         <- posterior_median_transform$k
 
 
 
-ef_infection <- 1 / (1 + exp(-k * (log10(n/om_scaling) - log10(ni50))))
-ef_severe <- 1 / (1 + exp(-k * (log10(n/om_scaling) - log10(ns50))))
-ef_death <- 1 / (1 + exp(-k * (log10(n/om_scaling) - log10(nd50))))
+ef_infection <- 1 / (1 + exp(-k * (log10(n) - om_scaling - ni50)))
+ef_severe <- 1 / (1 + exp(-k * (log10(n) - om_scaling - ns50)))
+ef_death <- 1 / (1 + exp(-k * (log10(n) - om_scaling - nd50)))
 
 r1 <- data.frame(n,ef_infection,ef_severe, ef_death, model = "refitted")
 
 
 # include original Khoury et al Nat Med curves
-ni50_2 <- 0.2
-ns50_2 <- 0.03
+ni50_2 <- log10(0.2)
+ns50_2 <- log10(0.03)
 k_2 <- 2.94
-vfr <- 9.7
+vfr <- log10(9.7)
 
-ef_infection <- 1 / (1 + exp(-k_2 * (log10(n/vfr) - log10(ni50_2))))
-ef_severe <- 1 / (1 + exp(-k_2 * (log10(n/vfr) - log10(ns50_2))))
+ef_infection <- 1 / (1 + exp(-k_2 * (log10(n) - vfr - ni50_2)))
+ef_severe <- 1 / (1 + exp(-k_2 * (log10(n) - vfr - ns50_2)))
 
 r2 <- data.frame(n,ef_infection,ef_severe, ef_death = NA, model = "Khoury et al")
 
